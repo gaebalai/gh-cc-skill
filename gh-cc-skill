@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# gh-skill — Install Claude Code skills from GitHub repositories
+# gh-cc-skill — Install Claude Code skills from GitHub repositories
 set -e
 
 COMMANDS_DIR="${CLAUDE_COMMANDS_DIR:-$HOME/.claude/commands}"
 
 show_help() {
   cat <<'EOF'
-gh skill — Install Claude Code skills from GitHub repositories
+gh cc-skill — Install Claude Code skills from GitHub repositories
 
 USAGE
-  gh skill install <owner/repo>
+  gh cc-skill install <owner/repo>
 
 COMMANDS
   install    Download commands/*.md from a GitHub repo to ~/.claude/commands/
@@ -18,8 +18,8 @@ OPTIONS
   --dir <path>    Override install directory (default: ~/.claude/commands/)
 
 EXAMPLES
-  gh skill install gaebalai/cc-security-scan
-  gh skill install gaebalai/cc-security-scan --dir /custom/path
+  gh cc-skill install gaebalai/cc-security-scan
+  gh cc-skill install gaebalai/cc-security-scan --dir /custom/path
 EOF
 }
 
@@ -48,13 +48,13 @@ cmd_install() {
 
   if [ -z "$REPO" ]; then
     echo "Error: repository required" >&2
-    echo "Usage: gh skill install <owner/repo>" >&2
+    echo "Usage: gh cc-skill install <owner/repo>" >&2
     exit 1
   fi
 
   # owner/repo 형식의 간단한 유효성 검사
   if [[ ! "$REPO" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ ]]; then
-    echo "Error: invalid repository format — use owner/repo (e.g. gaebalai/claude-security-scan)" >&2
+    echo "Error: invalid repository format — use owner/repo (e.g. gaebalai/cc-security-scan)" >&2
     exit 1
   fi
 

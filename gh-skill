@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# gh-skill — Install Claude Code skills from GitHub repositories
+set -e
+
+COMMANDS_DIR="${CLAUDE_COMMANDS_DIR:-$HOME/.claude/commands}"
+
+show_help() {
+  cat <<'EOF'
+gh skill — Install Claude Code skills from GitHub repositories
+
+USAGE
+  gh skill install <owner/repo>
+
+COMMANDS
+  install    Download commands/*.md from a GitHub repo to ~/.claude/commands/
+
+OPTIONS
+  --dir <path>    Override install directory (default: ~/.claude/commands/)
+
+EXAMPLES
+  gh skill install gaebalai/cc-security-scan
+  gh skill install gaebalai/cc-security-scan --dir /custom/path
+EOF
+}
+
+cmd_install() {
+  local REPO=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dir)
+        COMMANDS_DIR="$2"
+        shift 2
+        ;;
+      -*)
+        echo "Unknown option: $1" >&2
+        show_help
+        exit 1
+        ;;
+      *)
+        if [ -z "$REPO" ]; then
+          REPO="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  if [ -z "$REPO" ]; then
+    echo "Error: repository required" >&2
+    echo "Usage: gh skill install <owner/repo>" >&2
+    exit 1
+  fi
+
+  # owner/repo 형식의 간단한 유효성 검사
+  if [[ ! "$REPO" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ ]]; then
+    echo "Error: invalid repository format — use owner/repo (e.g. gaebalai/claude-security-scan)" >&2
+    exit 1
+  fi
+
+  echo "Fetching skills from $REPO..."
+
+  # commands/ 디렉토리의 파일 목록 가져오기
+  local FILES
+  if ! FILES=$(gh api "repos/$REPO/contents/commands" --jq '.[].name' 2>/dev/null); then
+    echo "Error: could not find commands/ directory in $REPO" >&2
+    echo "Make sure the repository has a commands/ directory with *.md skill files." >&2
+    exit 1
+  fi
+
+  if [ -z "$FILES" ]; then
+    echo "No skill files found in $REPO/commands/" >&2
+    exit 1
+  fi
+
+  mkdir -p "$COMMANDS_DIR"
+
+  local count=0
+  while IFS= read -r FILE; do
+    gh api "repos/$REPO/contents/commands/$FILE" \
+      --header "Accept: application/vnd.github.raw+json" \
+      > "$COMMANDS_DIR/$FILE"
+    echo "  ✓ $FILE"
+    count=$((count + 1))
+  done <<< "$FILES"
+
+  echo ""
+  echo "$count skill(s) installed to $COMMANDS_DIR"
+  echo "Restart Claude Code to activate."
+}
+
+case "${1:-help}" in
+  install)
+    shift
+    cmd_install "$@"
+    ;;
+  help|--help|-h)
+    show_help
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    show_help
+    exit 1
+    ;;
+esac
